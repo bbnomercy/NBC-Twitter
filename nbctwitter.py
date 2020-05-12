@@ -30,7 +30,7 @@ def cleaning(text):
 	text = re.sub(r'\S*twitter.com\S*', '', text)   #delete twitter image
 	text = re.sub(r'https?://[A-Za-z0-9./]+','',text) #delete url
 	text = re.sub(r'@[A-Za-z0-9]+','',text) #delete user mention
-	text = re.sub(r'#[A-Za-z0-9]+','',text) #delete twitter hashtag
+	#text = re.sub(r'#[A-Za-z0-9]+','',text) #delete twitter hashtag
 	text = re.sub(r'(?:(?:\d+,?)+(?:\.?\d+)?)','', text) #delete number
 	text = re.sub(r"[^a-zA-Z]", " ", text) #only accept alphabet char
 	text = re.sub(r"(\w)(\1{2,})", r'\1', text) #delete repeated char
@@ -48,7 +48,9 @@ if __name__ == '__main__':
 
 	data_train_true = pd.read_excel('twitter-prostitute.xlsx')
 	data_train_false = pd.read_excel('twitter-not-prostitute.xlsx')
-	test_data = pd.read_excel('labeled-data-testing.xlsx')
+	test_data = pd.read_excel('test-data-random.xlsx')
+
+	#test_data = test_data[:5000]
 
 	print(f"Jumlah data training (True)\t:\t{len(data_train_true)}")
 	print(f"Jumlah data training (False)\t:\t{len(data_train_false)}")
@@ -83,9 +85,30 @@ if __name__ == '__main__':
 						for tweet_dict in negative_tokens_for_model]
 	dataset = positive_dataset + negative_dataset
 
-	random.shuffle(dataset)
+	random.shuffle(positive_dataset)
+	random.shuffle(negative_dataset)
 
-	train_data = dataset[:40000]
+	from sklearn.model_selection import train_test_split
+
+	print(negative_dataset[:10])
+
+	true_dataset =  [i for n, i in enumerate(positive_dataset) if i not in positive_dataset[n + 1:]]
+	false_dataset = [i for n, i in enumerate(negative_dataset) if i not in negative_dataset[n + 1:]]
+
+
+	#random.shuffle(dataset)
+
+	train_data = []
+	if len(true_dataset) > len(false_dataset):
+		train_data = false_dataset + true_dataset[:len(false_dataset)]
+	else:
+		train_data = true_dataset + false_dataset[:len(true_dataset)]
+
+
+	#train_data = dataset[:40000]
+	train_data = true_dataset+false_dataset
+
+	print(f"Total data training: {len(train_data)}")
 
 	classifier = NaiveBayesClassifier.train(train_data)
 
@@ -134,7 +157,7 @@ if __name__ == '__main__':
 
 	c_matrix = nltk.ConfusionMatrix(classifier_result, actual_status)
 
-	print(f"Confusion Matrix :\n{c_matrix}", )
+	print(f"Confusion Matrix :\n{c_matrix}" )
 
 	labels = {'True', 'False'}
 
@@ -161,7 +184,7 @@ if __name__ == '__main__':
 
 
 	print()
-	print(classifier.show_most_informative_features(10))
+	print(classifier.show_most_informative_features(100))
 	print()
 
 	# custom_tweet = "open follow twitter bo untuk kawan kawan semuanya"
